@@ -41,11 +41,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function createClient(cookieJar, bbUrl) {
-  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
   const client = wrapper(axios.create({
     jar: cookieJar,
     withCredentials: true,
-    httpsAgent,
     baseURL: bbUrl,
     timeout: 30000,
     maxRedirects: 10,
@@ -64,6 +62,8 @@ function normalizeUrl(url) {
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = 'https://' + url;
   }
+  // Strip any path (e.g. /ultra) — we only want the origin
+  try { url = new URL(url).origin; } catch (_) {}
   return url.replace(/\/$/, '');
 }
 
