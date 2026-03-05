@@ -167,11 +167,15 @@ app.post('/api/login', async (req, res) => {
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
-    // Verify login success by checking final URL or page content
-    const finalUrl = loginRes.request?.res?.responseUrl || loginRes.config?.url || '';
-    const pageContent = loginPageRes.data || '';
-
-    if (finalUrl.includes('/webapps/login/') && loginRes.data.includes('loginErrorMessage')) {
+    // Verify login success: check for actual error text in the response
+    const $post = cheerio.load(loginRes.data || '');
+    const errorText = $post('#loginErrorMessage').text().trim() || $post('.errorMessage').first().text().trim();
+    if (errorText) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    // Also catch redirect back to login page (only use responseUrl, not config.url)
+    const responseUrl = loginRes.request?.res?.responseUrl || '';
+    if (responseUrl.includes('/webapps/login/') && (loginRes.data || '').length < 5000) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
