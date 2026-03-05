@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blackboard File Downloader</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="#2d3a8c"/>
+            <path d="M8 8h16v2H8zm0 5h16v2H8zm0 5h10v2H8z" fill="white"/>
+            <circle cx="22" cy="22" r="5" fill="#4ade80"/>
+            <path d="M20 22l1.5 1.5L24 20" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Blackboard Downloader</span>
+        </div>
+        <div id="user-info" class="user-info hidden">
+          <span id="user-status"></span>
+          <button class="btn btn-sm btn-outline" id="logout-btn">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Login Panel -->
+    <section id="login-panel" class="panel">
+      <div class="card login-card">
+        <h2>Connect to Blackboard</h2>
+        <p class="subtitle">Enter your university Blackboard URL and credentials</p>
+        <form id="login-form">
+          <div class="field">
+            <label for="bb-url">Blackboard URL</label>
+            <input type="url" id="bb-url" placeholder="https://blackboard.university.ac.uk" required />
+            <span class="hint">Your university's Blackboard web address</span>
+          </div>
+          <div class="field">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="student_id" required autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <div id="login-error" class="alert alert-error hidden"></div>
+          <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+            <span class="btn-text">Connect to Blackboard</span>
+            <span class="spinner hidden"></span>
+          </button>
+        </form>
+        <div class="info-box">
+          <strong>Privacy:</strong> Your credentials are used only to authenticate with Blackboard. They are not stored permanently.
+        </div>
+      </div>
+    </section>
+
+    <!-- Main App -->
+    <section id="main-panel" class="panel hidden">
+      <div class="main-layout">
+
+        <!-- Sidebar: Course List -->
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <h3>My Modules</h3>
+            <button class="btn btn-sm btn-outline" id="refresh-courses-btn" title="Refresh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            </button>
+          </div>
+          <div id="courses-loading" class="loading-state">
+            <div class="spinner-lg"></div>
+            <span>Loading modules...</span>
+          </div>
+          <ul id="courses-list" class="courses-list hidden"></ul>
+          <div id="courses-empty" class="empty-state hidden">
+            <p>No modules found</p>
+          </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="content-area">
+          <!-- Empty state -->
+          <div id="select-course-msg" class="empty-main">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            <h3>Select a Module</h3>
+            <p>Choose a module from the left to browse and download files</p>
+          </div>
+
+          <!-- File Browser -->
+          <div id="file-browser" class="hidden">
+            <!-- Toolbar -->
+            <div class="toolbar">
+              <div class="toolbar-left">
+                <h2 id="course-title">Module Name</h2>
+                <span id="file-count" class="badge"></span>
+              </div>
+              <div class="toolbar-right">
+                <div class="search-box">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  <input type="text" id="search-input" placeholder="Search files..." />
+                </div>
+                <button class="btn btn-secondary" id="format-filter-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                  Format Filter
+                  <span id="filter-badge" class="filter-count hidden">0</span>
+                </button>
+                <button class="btn btn-primary" id="download-selected-btn" disabled>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download ZIP
+                  <span id="selected-count" class="badge-count">0</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Format Filter Panel -->
+            <div id="format-panel" class="format-panel hidden">
+              <div class="format-panel-header">
+                <strong>Filter by Format</strong>
+                <div class="format-actions">
+                  <button class="btn-link" id="select-all-formats">All</button>
+                  <button class="btn-link" id="select-no-formats">None</button>
+                </div>
+              </div>
+              <div id="format-checkboxes" class="format-grid"></div>
+              <div class="format-panel-footer">
+                <button class="btn btn-sm btn-primary" id="apply-filter-btn">Apply Filter</button>
+                <button class="btn btn-sm btn-outline" id="close-filter-btn">Close</button>
+              </div>
+            </div>
+
+            <!-- Select All Row -->
+            <div class="select-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="select-all-files" />
+                <span>Select all visible files</span>
+              </label>
+              <span id="filtered-info" class="filtered-info"></span>
+            </div>
+
+            <!-- Files Loading -->
+            <div id="files-loading" class="loading-state">
+              <div class="spinner-lg"></div>
+              <span>Loading files...</span>
+            </div>
+
+            <!-- File List -->
+            <div id="files-container" class="files-container hidden"></div>
+
+            <!-- Files Empty -->
+            <div id="files-empty" class="empty-state hidden">
+              <p>No files found in this module</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <!-- Download Progress Modal -->
+    <div id="progress-modal" class="modal-overlay hidden">
+      <div class="modal">
+        <h3>Downloading Files</h3>
+        <div class="progress-bar-wrap">
+          <div id="progress-bar" class="progress-bar" style="width:0%"></div>
+        </div>
+        <p id="progress-text">Preparing download...</p>
+        <div id="progress-done" class="hidden">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+          <p>Download complete!</p>
+          <button class="btn btn-primary" id="close-modal-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
