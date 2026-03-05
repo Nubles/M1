@@ -1,7 +1,9 @@
 /* ── Backend URL ─────────────────────────────────────────────────────────── */
 // Reads from localStorage; defaults to localhost for local dev
 function getBackend() {
-  return (localStorage.getItem('bb_backend_url') || '').replace(/\/$/, '') || 'http://localhost:3000';
+  let url = (localStorage.getItem('bb_backend_url') || '').replace(/\/$/, '');
+  if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+  return url || 'http://localhost:3000';
 }
 function api(path) { return getBackend() + path; }
 
