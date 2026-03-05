@@ -5,9 +5,6 @@ const archiver = require('archiver');
 const cheerio = require('cheerio');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const { CookieJar } = require('tough-cookie');
-const { wrapper } = require('axios-cookiejar-support');
-const https = require('https');
 const path = require('path');
 const stream = require('stream');
 
@@ -40,10 +37,29 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function createClient(cookieJar, bbUrl) {
-  const client = wrapper(axios.create({
-    jar: cookieJar,
-    withCredentials: true,
+class CookieStore {
+  constructor() { this.jar = new Map(); }
+  set(url, headers) {
+    const host = this._host(url);
+    if (!this.jar.has(host)) this.jar.set(host, new Map());
+    const store = this.jar.get(host);
+    for (const h of (Array.isArray(headers) ? headers : [headers])) {
+      const [pair] = h.split(';');
+      const eq = pair.indexOf('=');
+      if (eq < 0) continue;
+      store.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
+    }
+  }
+  get(url) {
+    const store = this.jar.get(this._host(url));
+    if (!store || !store.size) return '';
+    return [...store.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+  }
+  _host(url) { try { return new URL(url).hostname; } catch { return url; } }
+}
+
+function createClient(cookieStore, bbUrl) {
+  const client = axios.create({
     baseURL: bbUrl,
     timeout: 30000,
     maxRedirects: 10,
@@ -52,7 +68,17 @@ function createClient(cookieJar, bbUrl) {
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.5',
     }
-  }));
+  });
+  client.interceptors.request.use(cfg => {
+    const cookies = cookieStore.get(cfg.url?.startsWith('http') ? cfg.url : bbUrl);
+    if (cookies) cfg.headers['Cookie'] = cookies;
+    return cfg;
+  });
+  client.interceptors.response.use(res => {
+    const sc = res.headers['set-cookie'];
+    if (sc) cookieStore.set(res.config.url || bbUrl, sc);
+    return res;
+  });
   return client;
 }
 
@@ -104,8 +130,8 @@ app.post('/api/login', async (req, res) => {
   }
 
   const baseUrl = normalizeUrl(bbUrl);
-  const jar = new CookieJar();
-  const client = createClient(jar, baseUrl);
+  const cookieStore = new CookieStore();
+  const client = createClient(cookieStore, baseUrl);
 
   try {
     // Step 1: Load login page to get tokens/cookies
@@ -151,7 +177,7 @@ app.post('/api/login', async (req, res) => {
 
     // Store client for session
     const sessionId = `${username}_${Date.now()}`;
-    clientStore.set(sessionId, { client, jar, baseUrl });
+    clientStore.set(sessionId, { client, baseUrl });
     req.session.bbSession = sessionId;
     req.session.bbUrl = baseUrl;
 
