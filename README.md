@@ -1,81 +1,113 @@
 # Blackboard File Downloader
 
-A web app that connects to your university's Blackboard LMS and lets you browse and bulk-download files from all your modules, with format filtering.
+Download all files from your university Blackboard modules — bulk ZIP downloads with format filtering. Hosted entirely on GitHub Pages + Vercel (both free).
+
+## Architecture
+
+```
+GitHub Pages (free)          Vercel (free)
+────────────────────         ──────────────────────
+docs/index.html   ←──────── api/login.js
+docs/style.css    fetch()    api/courses.js
+docs/app.js                  api/contents.js
+                             api/download.js
+                             api/logout.js
+```
+
+- **Frontend**: Pure HTML/CSS/JS — deployed to GitHub Pages automatically via GitHub Actions on every push to `main`
+- **Backend proxy**: Node.js serverless functions on Vercel — handles Blackboard authentication and file proxying (needed because Blackboard blocks cross-origin browser requests)
+
+---
+
+## Deploy in 3 steps
+
+### Step 1 — Fork & enable GitHub Pages
+
+1. **Fork this repo** to your GitHub account
+2. Go to your fork → **Settings → Pages**
+3. Set Source to **GitHub Actions**
+4. On the next push to `main`, GitHub Actions will deploy `docs/` to `https://YOUR_USERNAME.github.io/M1/`
+
+### Step 2 — Deploy the backend to Vercel
+
+Click the button below to deploy the backend proxy with one click (free Vercel account required):
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNubles%2FM1&env=SESSION_SECRET&envDescription=A+random+secret+string+for+session+security&project-name=blackboard-downloader&repository-name=blackboard-downloader)
+
+- When prompted, set `SESSION_SECRET` to any random string (e.g. `my-super-secret-123`)
+- After deployment, copy your Vercel URL (e.g. `https://blackboard-downloader.vercel.app`)
+
+### Step 3 — Connect them
+
+1. Open your GitHub Pages URL
+2. Click the **⚙ gear icon** in the top-right corner
+3. Paste your Vercel URL and click **Save**
+4. Log in with your Blackboard credentials
+
+---
+
+## Local development
+
+```bash
+git clone https://github.com/YOUR_USERNAME/M1.git
+cd M1
+npm install
+cp .env.example .env   # set SESSION_SECRET
+npm start              # starts Express at http://localhost:3000
+```
+
+Then open `http://localhost:3000` (uses the `public/` folder).
+Or open `docs/index.html` in your browser and set backend URL to `http://localhost:3000` via the ⚙ settings.
+
+---
 
 ## Features
 
-- **Authenticate** with any Blackboard instance using your university credentials
-- **Browse all modules** you are enrolled in
-- **Download all files** from a module as a single ZIP
-- **Format filter** — choose exactly which file types to include (PDF, DOCX, PPTX, XLSX, MP4, ZIP, etc.)
-- **Individual downloads** — download any single file directly
-- **Search** — filter files by name within a module
-- Supports both the **Blackboard REST API** and falls back to **web scraping** for older instances
+- Browse all enrolled modules
+- View all attached files per module
+- **Format filter** — choose which file types to include: PDF, DOCX, PPTX, XLSX, MP4, ZIP, etc.
+- **Bulk ZIP download** of any selection of files
+- **Individual download** button on each file
+- Search/filter by filename within a module
+- Works with Blackboard REST API (modern instances) and HTML scraping fallback (legacy instances)
 
-## Quick Start
+---
 
-### Prerequisites
-- Node.js 18 or higher
-- Access to a Blackboard LMS instance
+## File structure
 
-### Installation
-
-```bash
-git clone https://github.com/your-username/blackboard-file-downloader.git
-cd blackboard-file-downloader
-
-npm install
-
-cp .env.example .env
-# Edit .env and set SESSION_SECRET to a random string
-
-npm start
+```
+├── .github/workflows/deploy.yml   GitHub Actions → GitHub Pages
+├── api/                           Vercel serverless functions (backend proxy)
+│   ├── _helpers.js
+│   ├── login.js
+│   ├── courses.js
+│   ├── contents.js
+│   ├── download.js
+│   ├── logout.js
+│   └── health.js
+├── docs/                          GitHub Pages static frontend
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+├── public/                        Local dev frontend (Express serves this)
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+├── server.js                      Express server (local dev / self-hosting)
+├── vercel.json                    Vercel routing config
+└── package.json
 ```
 
-Open http://localhost:3000 in your browser.
+---
 
-### Deploy to Railway / Render / Fly.io
+## Security notes
 
-1. Push this repo to GitHub
-2. Connect your GitHub repo to Railway, Render, or Fly.io
-3. Set the `SESSION_SECRET` environment variable
-4. Deploy — the `npm start` command will be detected automatically
+- Credentials are used only to authenticate with Blackboard — never stored permanently
+- Sessions are in-memory and expire on Vercel function restarts (cold starts)
+- Use a strong random value for `SESSION_SECRET`
+- Vercel provides HTTPS automatically
 
-### Deploy to Heroku
-
-```bash
-heroku create
-heroku config:set SESSION_SECRET=your-random-secret
-git push heroku main
-```
-
-## Usage
-
-1. Enter your university's Blackboard URL (e.g. `https://blackboard.university.ac.uk`)
-2. Log in with your student credentials
-3. Your modules will appear in the sidebar
-4. Click a module to load its files
-5. Use **Format Filter** to select which file types you want
-6. Check the files you want and click **Download ZIP**
-
-## How It Works
-
-The app runs a Node.js/Express server that:
-1. Authenticates with Blackboard on your behalf (your credentials stay on the server only for the duration of your session)
-2. Tries the official **Blackboard REST API** (`/learn/api/public/v1/...`) to enumerate courses and attachments
-3. Falls back to **HTML scraping** for Blackboard instances that don't expose the REST API
-4. Streams files to your browser packaged in a ZIP archive
-
-## Security Notes
-
-- Credentials are used only to authenticate with Blackboard and are **not stored** after your session ends
-- Use a strong, random `SESSION_SECRET` in production
-- Run behind HTTPS in production (use a reverse proxy like nginx or a platform that provides TLS)
-- This app is for personal use with your own account only
-
-## Supported File Types
-
-PDF, DOC/DOCX, PPT/PPTX, XLS/XLSX, ZIP, MP4, MP3, TXT, PNG, JPG, GIF, CSV, and any other files attached to Blackboard content items.
+---
 
 ## License
 

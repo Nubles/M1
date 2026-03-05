@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/login",
+      "dest": "/api/login.js"
+    },
+    {
+      "src": "/api/courses",
+      "dest": "/api/courses.js"
+    },
+    {
+      "src": "/api/courses/([^/]+)/contents",
+      "dest": "/api/contents.js?courseId=$1"
+    },
+    {
+      "src": "/api/download/file",
+      "dest": "/api/download.js"
+    },
+    {
+      "src": "/api/download/zip",
+      "dest": "/api/download.js"
+    },
+    {
+      "src": "/api/logout",
+      "dest": "/api/logout.js"
+    },
+    {
+      "src": "/api/health",
+      "dest": "/api/health.js"
+    }
+  ]
+}
