@@ -28,13 +28,24 @@ docs/app.js                  api/contents.js
 3. Set Source to **GitHub Actions**
 4. On the next push to `main`, GitHub Actions will deploy `docs/` to `https://YOUR_USERNAME.github.io/M1/`
 
-### Step 2 — Deploy the backend to Vercel
+### Step 2 — Deploy the backend
 
-Click the button below to deploy the backend proxy with one click (free Vercel account required):
+> **Note for UK universities:** Vercel runs on US servers which some universities block. If login fails with "Cannot reach Blackboard", use Railway instead (EU servers).
+
+**Option A — Railway (recommended for UK universities, EU servers):**
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/deploy?template=https://github.com/Nubles/M1)
+
+- Click Deploy, connect your GitHub account, select this repo
+- Go to your service → **Settings → Region** → pick **Europe West**
+- Add environment variable: `SESSION_SECRET` = any random string
+- Copy your Railway URL (e.g. `https://m1-production.up.railway.app`)
+
+**Option B — Vercel (US servers):**
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNubles%2FM1&env=SESSION_SECRET&envDescription=A+random+secret+string+for+session+security&project-name=blackboard-downloader&repository-name=blackboard-downloader)
 
-- When prompted, set `SESSION_SECRET` to any random string (e.g. `my-super-secret-123`)
+- When prompted, set `SESSION_SECRET` to any random string
 - After deployment, copy your Vercel URL (e.g. `https://blackboard-downloader.vercel.app`)
 
 ### Step 3 — Connect them
