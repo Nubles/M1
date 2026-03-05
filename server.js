@@ -114,7 +114,8 @@ app.post('/api/login', async (req, res) => {
     try {
       loginPageRes = await client.get(loginPageUrl);
     } catch (e) {
-      return res.status(502).json({ error: `Cannot reach Blackboard at ${baseUrl}. Check the URL.` });
+      const reason = e.code || (e.response ? `HTTP ${e.response.status}` : e.message);
+      return res.status(502).json({ error: `Cannot reach Blackboard at ${baseUrl} (${reason}). Check the URL or try again.` });
     }
 
     const $ = cheerio.load(loginPageRes.data);
